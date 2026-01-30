@@ -23,11 +23,11 @@ Ongoing development of JCEF occurs on the [master branch](https://github.com/chr
 
 # Building from Source Code
 
-Building JCEF from source code is currently supported on Windows, Linux and Mac OS X for 64-bit Oracle Java targets. 32-bit builds are also possible on Windows and Linux but they are untested.
+Building JCEF from source code is currently supported on Windows, Linux and MacOS for 64-bit Oracle Java targets. 32-bit builds are also possible on Windows and Linux but they are untested.
 
 To build JCEF from source code you should begin by installing the build prerequisites for your operating system and development environment. For all platforms this includes:
 
-* [CMake](http://cmake.org/download/) version 3.19 or newer.
+* [CMake](http://cmake.org/download/) version 3.21 or newer.
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 * [Java](https://java.com/en/download/) version 7 to 14.
 * [Python](https://www.python.org/downloads/) version 2.6+ or 3+.
@@ -36,15 +36,15 @@ For Linux platforms:
 
 * Currently supported distributions include Debian 10 (Buster), Ubuntu 18 (Bionic Beaver), and related. Ubuntu 18.04 64-bit with GCC 7.5.0+ is recommended. Newer versions will likely also work but may not have been tested. Required packages include: build-essential, libgtk-3-dev.
 
-For Mac OS X platforms:
+For MacOS platforms:
 
 * [Apache Ant](https://ant.apache.org/bindownload.cgi) is required to build the Java app bundle.
 * Java version newer than 8u121 is required.
-* Xcode 12.2 to 13.0 building on MacOS 10.15.4 (Catalina) or newer. The Xcode command-line tools must also be installed. Only 64-bit builds are supported on macOS.
+* Xcode 13.5 to 16.4 building on MacOS 12.0 (Monterey) or newer. The Xcode command-line tools must also be installed.
 
 For Windows platforms:
 
-* Visual Studio 2019 or newer building on Windows 7 or newer. Windows 10 64-bit are recommended.
+* Visual Studio 2022 building on Windows 10 or newer. Windows 10/11 64-bit is recommended.
 
 ## Building with Docker or GitHub Actions
 
@@ -83,14 +83,20 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 # Build using Make.
 make -j4
 
-# Mac OS X: Generate 64-bit Xcode project files.
+# MacOS: Generate 64-bit Xcode project files.
 cmake -G "Xcode" -DPROJECT_ARCH="x86_64" ..
 # Open jcef.xcodeproj in Xcode
 # - Select Scheme > Edit Scheme and change the "Build Configuration" to "Release"
 # - Select Product > Build.
 
-# Windows: Generate 64-bit VS2019 project files.
-cmake -G "Visual Studio 16" -A x64 ..
+# MacOS: Generate ARM64 Xcode project files.
+cmake -G "Xcode" -DPROJECT_ARCH="arm64" ..
+# Open jcef.xcodeproj in Xcode
+# - Select Scheme > Edit Scheme and change the "Build Configuration" to "Release"
+# - Select Product > Build.
+
+# Windows: Generate 64-bit VS2022 project files.
+cmake -G "Visual Studio 17" -A x64 ..
 # Open jcef.sln in Visual Studio
 # - Select Build > Configuration Manager and change the "Active solution configuration" to "Release"
 # - Select Build > Build Solution.
@@ -105,7 +111,7 @@ cd /path/to/java-cef/src/tools
 compile.bat win64
 ```
 
-On Mac OS X the JCEF Java classes are already built by the CMake project.
+On MacOS the JCEF Java classes are already built by the CMake project.
 
 3\. On Windows and Linux test that the resulting build works using the _run.[bat\|sh]_ tool. You can either run the simple example (see java/simple/MainFrame.java) or the detailed one (see java/detailed/MainFrame.java) by appending "detailed" or "simple" to the _run.[bat\|sh]_ tool. This example assumes that the "Release" configuration was built in step 1 and that you want to use the detailed example.
 
@@ -114,7 +120,7 @@ cd /path/to/java-cef/src/tools
 run.bat win64 Release detailed
 ```
 
-On Mac OS X run jcef\_app for the detailed example. Either use the command-line or double-click on jcef\_app in Finder.
+On MacOS run jcef\_app for the detailed example. Either use the command-line or double-click on jcef\_app in Finder.
 
 ```sh
 cd /path/to/java-cef/src/jcef_build/native/Release
