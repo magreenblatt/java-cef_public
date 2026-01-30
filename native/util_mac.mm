@@ -56,6 +56,16 @@ bool g_handling_send_event = false;
 @implementation SetVisibilityParams
 @end
 
+// Used for passing a Java Runnable to the main thread.
+@interface RunOnMainThreadParams : NSObject {
+ @public
+  JavaVM* jvm_;
+  jobject runnable_;
+}
+@end
+@implementation RunOnMainThreadParams
+@end
+
 // Obj-C Wrapper Class to be called by "performSelectorOnMainThread".
 @interface CefHandler : NSObject {
 }
@@ -64,6 +74,7 @@ bool g_handling_send_event = false;
 + (void)shutdown;
 + (void)doMessageLoopWork;
 + (void)setVisibility:(SetVisibilityParams*)params;
++ (void)runOnMainThread:(RunOnMainThreadParams*)params;
 
 @end  // interface CefHandler
 
@@ -246,6 +257,36 @@ bool g_handling_send_event = false;
     }
   }
   [params release];
+}
+
++ (void)runOnMainThread:(RunOnMainThreadParams*)params {
+  JNIEnv* env = nullptr;
+  bool shouldDetach = false;
+  jint getEnvResult = params->jvm_->GetEnv((void**)&env, JNI_VERSION_1_6);
+
+  if (getEnvResult == JNI_EDETACHED) {
+    if (params->jvm_->AttachCurrentThread((void**)&env, nullptr) == JNI_OK) {
+      shouldDetach = true;
+    } else {
+      return;  // Failed to attach
+    }
+  } else if (getEnvResult != JNI_OK) {
+    return;  // Failed to get env
+  }
+
+  // Call Runnable.run()
+  jclass runnableClass = env->GetObjectClass(params->runnable_);
+  jmethodID runMethod = env->GetMethodID(runnableClass, "run", "()V");
+  if (runMethod) {
+    env->CallVoidMethod(params->runnable_, runMethod);
+  }
+
+  // Clean up the global ref
+  env->DeleteGlobalRef(params->runnable_);
+
+  if (shouldDetach) {
+    params->jvm_->DetachCurrentThread();
+  }
 }
 
 @end  // implementation CefHandler
@@ -468,6 +509,28 @@ void SetVisibility(CefWindowHandle handle, bool isVisible) {
   [[CefHandler class] performSelectorOnMainThread:@selector(setVisibility:)
                                        withObject:params
                                     waitUntilDone:NO];
+}
+
+void RunOnMainThread(JNIEnv* env, jobject runnable) {
+  if ([NSThread isMainThread]) {
+    // Already on main thread, just run directly
+    jclass runnableClass = env->GetObjectClass(runnable);
+    jmethodID runMethod = env->GetMethodID(runnableClass, "run", "()V");
+    if (runMethod) {
+      env->CallVoidMethod(runnable, runMethod);
+    }
+    return;
+  }
+
+  RunOnMainThreadParams* params = [[RunOnMainThreadParams alloc] init];
+  env->GetJavaVM(&params->jvm_);
+  params->runnable_ = env->NewGlobalRef(runnable);
+
+  // Block until done.
+  [[CefHandler class] performSelectorOnMainThread:@selector(runOnMainThread:)
+                                       withObject:params
+                                    waitUntilDone:YES];
+  [params release];
 }
 
 void UpdateView(CefWindowHandle handle,

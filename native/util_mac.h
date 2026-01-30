@@ -46,6 +46,9 @@ void UpdateView(CefWindowHandle handle,
                 CefRect contentRect,
                 CefRect browserRect);
 
+// Run a Java Runnable on the macOS main thread, blocking until complete.
+void RunOnMainThread(JNIEnv* env, jobject runnable);
+
 }  // namespace util_mac
 
 #endif  // JCEF_NATIVE_UTIL_MAC_H_

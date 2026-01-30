@@ -51,6 +51,31 @@ import tests.detailed.util.DataUri;
 public class MainFrame extends BrowserFrame {
     private static final long serialVersionUID = -2295538706810864538L;
     public static void main(String[] args) {
+        // On macOS with OSR, we must initialize JOGL before CEF takes over the
+        // main thread. JOGL's SharedResourceRunner creates/destroys temporary
+        // NSWindows which must happen on the main thread. After CEF initializes,
+        // its message loop doesn't pump JOGL's dispatch mechanism.
+        //
+        // Solution: Load jcef library early, use our runOnMainThread to dispatch
+        // JOGL init to thread 0, then proceed with normal CEF startup.
+        boolean osrRequested = false;
+        for (String arg : args) {
+            if (arg.toLowerCase().equals("--off-screen-rendering-enabled")) {
+                osrRequested = true;
+                break;
+            }
+        }
+        if (org.cef.OS.isMacintosh() && osrRequested) {
+            System.out.println("Pre-initializing JOGL on main thread for macOS OSR...");
+            // Load jcef library to get access to runOnMainThread
+            org.cef.SystemBootstrap.loadLibrary("jcef");
+            // Dispatch JOGL init to the macOS main thread (thread 0)
+            org.cef.misc.CefMainThreadUtil.runOnMainThread(() -> {
+                com.jogamp.opengl.GLProfile.initSingleton();
+            });
+            System.out.println("JOGL pre-initialization complete.");
+        }
+
         // Perform startup initialization on platforms that require it.
         if (!CefApp.startup(args)) {
             System.out.println("Startup initialization failed!");
@@ -272,7 +297,7 @@ public class MainFrame extends BrowserFrame {
         if (createImmediately) browser.createImmediately();
 
         // Add the browser to the UI.
-        contentPanel_.add(getBrowser().getUIComponent(), BorderLayout.CENTER);
+        contentPanel_.add(browser.getUIComponent(), BorderLayout.CENTER);
 
         MenuBar menuBar = new MenuBar(
                 this, browser, control_pane_, downloadDialog, CefCookieManager.getGlobalManager());
