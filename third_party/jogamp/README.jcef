@@ -13,4 +13,8 @@ See http://jogamp.org/wiki/index.php/Downloading_and_installing_JOGL for
 related documentation.
 
 Local Modifications:
-None.
+Patch OSXUtil.DestroyNSWindow in jogl-all.jar to dispatch via
+RunOnMainThread when called from a background thread, matching how
+CreateNSWindow is already handled. The issue includes a script for
+applying this patch to the original 2.4.0 jar version.
+https://github.com/chromiumembedded/java-cef/issues/514#issuecomment-3825848565
